@@ -1,120 +1,77 @@
-let characterBar = document.getElementById('character-bar');
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
+    fetchCharacters();
+});
 
+let characterBar = document.getElementById("character-bar");
+let newCharacter = null;
 
-    fetch(`http://localhost:3000/characters`)
-    .then(res => res.json())
-    .then(characters => {characters.forEach(character => {
-        const span = document.createElement('span');
-        span.textContent = character.name;
-        span.style.cursor = 'pointer';
+function fetchCharacters() {
+    fetch("http://localhost:3000/characters")
+        .then(response => response.json())
+        .then(characters => {
+            characters.forEach(function (character) {
+                let span = document.createElement("span");
+                span.textContent = character.name;
+                span.style.cursor = "pointer";
+                span.addEventListener("click", () => {
+                    displayDetails(character);
+                });
+                characterBar.appendChild(span);
+            });
 
-        characterBar.appendChild(span)
-        span.addEventListener('click', () => {
-            displayCharacterDetails(character.id)
-
-            })
-         });
-
-    })
-})
-
-
-let characterVotes = document.getElementById('vote-count')
-
-function displayCharacterDetails(id){
-    fetch(`http://localhost:3000/characters/${id}`)
-    .then(res => res.json())
-    .then(character => {
-
-        let name = document.getElementById('name');
-        let  image = document.querySelector('#detailed-info img');
-
-       name.textContent = `${character.name}`;
-        image.src = `${character.image}`;
-        image.alt = `${character.name}`;
-        characterVotes.textContent = `${character.votes}`;
-
-    });
+            newCharacter = characters[0]; 
+            displayDetails(newCharacter);
+        })
+        .catch(err => console.error(err));
 }
 
 
 
+function displayDetails(character) {
+    newCharacter = character; 
 
-//Addition of votes
-let form = document.getElementById('votes-form');
+    document.querySelector("#name").textContent = character.name;
+    document.querySelector("#image").src = character.image;
+    document.querySelector("#image").alt = character.name;
+    document.querySelector("#vote-count").textContent = character.votes;
+}
 
-form.addEventListener('submit', (e) => {
-    e.preventDefault();
+const form = document.querySelector("#votes-form");
+form.addEventListener("submit", countVote);
 
-    let newVotes = parseInt(document.getElementById('votes').value);
-    let voteCount = parseInt(document.getElementById('vote-count').textContent);
+function countVote(event) {
+    event.preventDefault();
+    let voteCount = document.querySelector("#vote-count");
+    let inputField = document.querySelector("#votes");
+    let updatedVotes = parseInt(inputField.value, 10) || 0;
 
-    if(!isNaN(newVotes) && !isNaN(voteCount)){
-        let updatedVotes = voteCount + newVotes
-        characterVotes.innerText = `${updatedVotes}`
-    } else{
-        alert('Input valid Number');
-        
-    }
-        
-    form.reset();
+    newCharacter.votes += updatedVotes; 
+    voteCount.textContent = newCharacter.votes;
 
-});
+    event.target.reset()
 
-
-//Reset functionality 
-let resetBtn = document.getElementById('reset-btn');
-
-resetBtn.addEventListener('click', () => {
-    let characterVotes = document.getElementById('vote-count')
-    characterVotes.innerText = '0'
-});
-
-//Adding characters
-
-let characterForm = document.getElementById('character-form');
-
-characterForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    console.log(characterForm);
-
-    let newCharacterName = document.querySelector('#character-form #name').value
-    console.log(newCharacterName);
-    
-    const span = document.createElement('span');
-    span.textContent = newCharacterName;
-    
-    
-    characterBar.appendChild(span)
-    characterForm.reset();
-
-
-    let name = document.getElementById('name')
-    let  image = document.querySelector('#detailed-info img');
-    let imageInput = document.getElementById('image-url').value
-    function immediateDisplay(){  
-        name.textContent = `${newCharacterName}`;
-        image.src = `${imageInput}`;
-        image.alt = `${newCharacterName}`;
-        characterVotes.textContent = ` 0`;
-    
-    }
-
-    immediateDisplay()
-
-
-    span.addEventListener('click', () => {
-        let name = document.getElementById('name');
-        let  image = document.querySelector('#detailed-info img');
-        let imageInput = document.getElementById('image-url').value
-
-
-        name.textContent = `${newCharacterName}`;
-        image.src = `${imageInput}`;
-        image.alt = `${newCharacterName}`;
-        characterVotes.textContent = ` 0`;
-
-
+    fetch(`http://localhost:3000/characters/${newCharacter.id}`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ votes: newCharacter.votes }),
     })
-})
+    .then(response => response.json())
+    .then(updatedCharacter => console.log("Updated Character:", updatedCharacter))
+    .catch(err => console.error("Error updating votes:", err));
+}
+
+document.querySelector("#reset-btn").addEventListener("click", () => {
+    newCharacter.votes = 0; 
+    document.querySelector("#vote-count").textContent = 0;})
+    fetch(`http://localhost:3000/characters/${newCharacter.id}`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ votes: 0 }),
+    })
+    .then(response => response.json())
+    .then(updatedCharacter => console.log("Votes Reset:", updatedCharacter))
+    .catch(err => console.error("Error resetting votes:", err));
